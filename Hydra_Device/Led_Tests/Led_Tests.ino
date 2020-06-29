@@ -1,4 +1,4 @@
-#include <arduino-timer.h>
+
 #include <FastLED.h>
 
 #define REDPIN   D3
@@ -8,50 +8,88 @@
 #define SERIAL_BAUD 115200
 
 // Time period of fading in millisecs
-#define PERIOD 2000
+#define PERIOD 10000
 // Angular Frequency by definition
 #define OMEGA 2*PI/PERIOD
 // No Phase
 #define PHASE 0
 // Offset of the sine wave
-#define OFFSET 128
+#define OFFSET 127
 // Amplitude of the sine wave
-#define AMPLITUDE 127
+#define AMPLITUDE 150
 
 int update_led_timer = 25;
 
 
-void showAnalogRGB( const CRGB& rgb)
+void showAnalogR( const CRGB& rgb)
 {
   analogWrite(REDPIN,   rgb.r );
-  analogWrite(GREENPIN, rgb.g );//rgb.g
+  analogWrite(GREENPIN, 0 );
+  analogWrite(BLUEPIN,  0 );
+}
+
+void callback_Red_led()
+{
+
+  float ledValue = millis()/1000.0;
+  int value = 128.0 + 128 * sin( ledValue * 2.0 * PI  );
+  Serial.println(ledValue);
+  showAnalogR(CHSV( 0, 255, checkValue(value)));
+}
+
+void showAnalogG( const CRGB& rgb)
+{
+  analogWrite(REDPIN,  0  );
+  analogWrite(GREENPIN, rgb.g );
+  analogWrite(BLUEPIN,  0 );
+}
+void callback_Green_led()
+{
+  float ledValue = OFFSET + AMPLITUDE * (cos((OMEGA * millis()) + PHASE));
+
+  showAnalogG(CHSV( 100, 255, checkValue(ledValue)));
+}
+
+void showAnalogB( const CRGB& rgb)
+{
+  analogWrite(REDPIN,  0  );
+  analogWrite(GREENPIN, 0 );
   analogWrite(BLUEPIN,  rgb.b );
 }
 
 
-void callback_led()
+
+void callback_Blue_led()
 {
-  float ledValue = OFFSET + AMPLITUDE * (cos((OMEGA * millis()) + PHASE));
+  int ledValue = OFFSET + AMPLITUDE * (cos((OMEGA * millis()) + PHASE));
 
-  showAnalogRGB(CHSV( ledValue, 255, 255));
+   
 
-  Serial.println(ledValue);
+  showAnalogB(CHSV( 225, 255, checkValue(ledValue)));
+  Serial.print(ledValue);
+  Serial.print("    ");
+  Serial.println(checkValue(ledValue));
 
+
+}
+
+int checkValue(int val) {
+  if (val > 255)
+    val = 255;
+  else if (val < 0)
+    val = 0;
+  return val;
 }
 
 void setup() {
   Serial.begin(SERIAL_BAUD);
-
   pinMode(REDPIN,   OUTPUT);
   pinMode(GREENPIN, OUTPUT);
   pinMode(BLUEPIN,  OUTPUT);
-
-  Serial.write("i am in setup");
-
 }
 
 
 void loop()
 {
-  if (millis() % update_led_timer == 0) callback_led();
+  if (millis() % update_led_timer == 0) callback_Blue_led();
 }
